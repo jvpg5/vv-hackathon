@@ -269,7 +269,7 @@ export const usersService = {
 
   // Obter ranking de usuários
   async getRanking(limit = 10) {
-    return apiRequest(`/users?sort=pontos_totais:desc&pagination[limit]=${limit}`);
+    return apiRequest(`/users?sort=pontos:desc&pagination[limit]=${limit}`);
   },
 };
 
