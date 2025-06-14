@@ -5,7 +5,14 @@ import { useRouter } from "next/navigation";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import Loading from "@/components/Loading";
-import { QrCode, CheckCircle, XCircle, MapPin, Trophy, Camera } from "lucide-react";
+import {
+  QrCode,
+  CheckCircle,
+  XCircle,
+  MapPin,
+  Trophy,
+  Camera,
+} from "lucide-react";
 
 export default function ScannerPage() {
   const router = useRouter();
@@ -17,24 +24,24 @@ export default function ScannerPage() {
   // Redirecionar se não estiver autenticado
   useEffect(() => {
     if (!appLoading && !isAuthenticated) {
-      router.push('/login');
+      router.push("/login");
     }
   }, [isAuthenticated, appLoading]);
 
   const simulateQRScan = () => {
     setIsScanning(true);
-    setScanStatus('processing');
-    
+    setScanStatus("processing");
+
     // Simular processamento
     setTimeout(() => {
       const mockQRData = "vilhena-local-001";
       setScanResult(mockQRData);
-      setScanStatus('success');
+      setScanStatus("success");
       setIsScanning(false);
-      
+
       // Redirecionar após 2 segundos
       setTimeout(() => {
-        router.push('/');
+        router.push("/");
       }, 2000);
     }, 2000);
   };
@@ -85,7 +92,7 @@ export default function ScannerPage() {
                 <p className="text-gray-500 mb-4">
                   Clique no botão abaixo para simular o scanner
                 </p>
-                <Button 
+                <Button
                   onClick={simulateQRScan}
                   className="bg-green-500 hover:bg-green-600"
                 >
@@ -101,26 +108,25 @@ export default function ScannerPage() {
               </div>
             )}
 
-            {scanStatus === 'success' && (
+            {scanStatus === "success" && (
               <div className="text-center p-6">
-                <CheckCircle size={64} className="text-green-500 mx-auto mb-4" />
+                <CheckCircle
+                  size={64}
+                  className="text-green-500 mx-auto mb-4"
+                />
                 <h3 className="text-xl font-bold text-gray-900 mb-2">
                   QR Code detectado!
                 </h3>
-                <p className="text-gray-600 mb-4">
-                  Local: {scanResult}
-                </p>
+                <p className="text-gray-600 mb-4">Local: {scanResult}</p>
                 <div className="flex items-center justify-center space-x-2 text-green-600">
                   <Trophy size={20} />
                   <span className="font-medium">+10 pontos</span>
                 </div>
-                <p className="text-sm text-gray-500 mt-2">
-                  Redirecionando...
-                </p>
+                <p className="text-sm text-gray-500 mt-2">Redirecionando...</p>
               </div>
             )}
 
-            {scanStatus === 'error' && (
+            {scanStatus === "error" && (
               <div className="text-center p-6">
                 <XCircle size={64} className="text-red-500 mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-gray-900 mb-2">
@@ -129,7 +135,7 @@ export default function ScannerPage() {
                 <p className="text-gray-600 mb-4">
                   Não foi possível ler o QR code
                 </p>
-                <Button 
+                <Button
                   onClick={resetScanner}
                   className="bg-red-600 hover:bg-red-700"
                 >
@@ -154,16 +160,16 @@ export default function ScannerPage() {
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-4">
           <Button
-            onClick={() => router.push('/')}
+            onClick={() => router.push("/")}
             variant="outline"
             className="flex items-center space-x-2"
           >
             <MapPin size={20} />
             <span>Ver Locais</span>
           </Button>
-          
+
           <Button
-            onClick={() => router.push('/rewards')}
+            onClick={() => router.push("/rewards")}
             variant="outline"
             className="flex items-center space-x-2"
           >
@@ -174,12 +180,10 @@ export default function ScannerPage() {
 
         {/* Info sobre MVP */}
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <h3 className="font-medium text-yellow-900 mb-2">
-            📱 Versão MVP
-          </h3>
+          <h3 className="font-medium text-yellow-900 mb-2">📱 Versão MVP</h3>
           <p className="text-sm text-yellow-800">
-            Esta é uma simulação do scanner QR. Na versão final, a câmera será utilizada 
-            para ler QR codes reais nos estabelecimentos de Vilhena.
+            Esta é uma simulação do scanner QR. Na versão final, a câmera será
+            utilizada para ler QR codes reais nos estabelecimentos de Vilhena.
           </p>
         </div>
       </div>
