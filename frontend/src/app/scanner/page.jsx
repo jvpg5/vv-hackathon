@@ -60,12 +60,12 @@ export default function ScannerPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
-      <div className="bg-green-600 text-white p-4">
+      <div className="bg-green-500 text-white p-4">
         <div className="flex items-center space-x-3">
           <QrCode size={24} />
           <div>
             <h1 className="text-xl font-bold">Scanner QR</h1>
-            <p className="text-green-100 text-sm">
+            <p className="text-white font-medium text-sm ">
               Escaneie QR codes dos locais
             </p>
           </div>
@@ -74,7 +74,7 @@ export default function ScannerPage() {
 
       <div className="p-4 space-y-6">
         {/* Scanner Area */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="h-72 flex items-center justify-center bg-gray-100 relative">
             {!isScanning && !scanStatus && (
               <div className="text-center">
@@ -87,7 +87,7 @@ export default function ScannerPage() {
                 </p>
                 <Button 
                   onClick={simulateQRScan}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-green-500 hover:bg-green-600"
                 >
                   <QrCode size={20} className="mr-2" />
                   Simular Scanner

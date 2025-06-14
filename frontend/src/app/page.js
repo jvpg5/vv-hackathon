@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import {star} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/contexts/AppContext';
 import { localsService } from '@/lib/api';
@@ -64,13 +65,14 @@ export default function Home() {
   }
 
   return (
-    <div className="pb-20"> {/* Espaço para navegação inferior */}
-      
-      {/* Hero Section */}
-      <div className="bg-gradient-to-br from-green-600 to-green-800 text-white p-6">
+    <div className="pb-20"> 
+      <div className="bg-gradient-to-br from-green-400 to-green-600 text-white p-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2">🌟 Valoriza Vilhena</h1>
-          <p className="text-green-100 mb-4">
+          <h1 className="text-2xl font-bold mb-2 flex items-center justify-center gap-2">
+            <Star className="text-white" size={28} />
+            Valoriza Vilhena
+          </h1>
+          <p className="font-medium text-white mb-4">
             Descubra a história e os sabores da nossa terra
           </p>
           
@@ -86,7 +88,7 @@ export default function Home() {
             
             <div className="bg-white/10 backdrop-blur rounded-lg p-4">
               <div className="flex items-center justify-center mb-2">
-                <MapPin className="text-blue-300" size={24} />
+                <MapPin className="text-white" size={24} />
               </div>
               <div className="text-2xl font-bold">{featuredLocals.length}</div>
               <div className="text-sm text-green-100">Locais</div>
@@ -101,7 +103,7 @@ export default function Home() {
         <div className="grid grid-cols-2 gap-4">
           <button 
             onClick={() => router.push('/scanner')}
-            className="bg-green-600 text-white p-4 rounded-lg flex flex-col items-center space-y-2 hover:bg-green-700 transition-colors"
+            className="bg-green-400 text-white p-4 rounded-lg flex flex-col items-center space-y-2 hover:bg-green-700 transition-colors"
           >
             <QrCode size={32} />
             <span className="font-medium">Escanear QR</span>
@@ -109,7 +111,7 @@ export default function Home() {
           
           <button 
             onClick={() => router.push('/rewards')}
-            className="bg-yellow-600 text-white p-4 rounded-lg flex flex-col items-center space-y-2 hover:bg-yellow-700 transition-colors"
+            className="bg-yellow-400 text-white p-4 rounded-lg flex flex-col items-center space-y-2 hover:bg-yellow-700 transition-colors"
           >
             <Trophy size={32} />
             <span className="font-medium">Recompensas</span>
