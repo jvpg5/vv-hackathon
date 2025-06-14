@@ -72,6 +72,33 @@ export const localsService = {
     return this.getAll(params);
   },
 
+  // Validar QR Code e retornar informações do local
+  async validateQrCode(qrCodeId) {
+    try {
+      const response = await this.getByQrCode(qrCodeId);
+      
+      if (response.data && response.data.length > 0) {
+        return {
+          valid: true,
+          local: response.data[0],
+          message: 'QR Code válido'
+        };
+      } else {
+        return {
+          valid: false,
+          local: null,
+          message: 'QR Code não encontrado no sistema'
+        };
+      }
+    } catch (error) {
+      return {
+        valid: false,
+        local: null,
+        message: 'Erro ao validar QR Code'
+      };
+    }
+  },
+
   // Criar novo local (admin)
   async create(data) {
     return apiRequest('/locals', {
@@ -221,6 +248,23 @@ export const usersService = {
         userId,
       }),
     });
+  },
+
+  // Fazer check-in em um local com QR Code
+  async checkInWithQrCode(qrCodeId, userId) {
+    try {
+      // Primeiro valida o QR Code
+      const validation = await localsService.validateQrCode(qrCodeId);
+      
+      if (!validation.valid) {
+        throw new Error(validation.message);
+      }
+
+      // Se válido, faz o check-in
+      return await this.checkIn(validation.local.documentId, userId);
+    } catch (error) {
+      throw error;
+    }
   },
 
   // Obter ranking de usuários

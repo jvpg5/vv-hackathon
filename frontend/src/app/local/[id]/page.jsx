@@ -69,7 +69,8 @@ export default function LocalDetailPage() {
     
     try {
       setCheckInLoading(true);
-      await checkIn(local.id);
+      await checkIn(local.documentId);
+      await 
       setIsCheckedIn(true);
       
       // Mostrar feedback de sucesso
