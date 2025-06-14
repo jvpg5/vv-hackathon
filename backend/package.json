@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@strapi/plugin-cloud": "5.15.1",
+    "@strapi/plugin-documentation": "^5.15.1",
     "@strapi/plugin-users-permissions": "5.15.1",
     "@strapi/strapi": "5.15.1",
     "better-sqlite3": "11.3.0",
@@ -37,5 +38,14 @@
   "strapi": {
     "uuid": "ccba1a41-cc97-4a55-aa70-3e4feeb9db5d",
     "installId": "8146af5bb93798278dd5a2023df46721ebfa1083a78d98d1be74936310535200"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@swc/core",
+      "better-sqlite3",
+      "core-js-pure",
+      "esbuild",
+      "sharp"
+    ]
   }
 }
