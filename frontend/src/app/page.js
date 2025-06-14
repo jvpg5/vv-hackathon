@@ -66,7 +66,7 @@ export default function Home() {
 
   return (
     <div className="pb-20"> 
-      <div className="bg-gradient-to-br from-green-400 to-green-600 text-white p-6">
+      <div className="bg-gradient-to-br from-green-400 to-green-600 text-white p-6 rounded-b-xl">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-2 flex items-center justify-center gap-2">
             <Star className="text-white" size={28} />
@@ -103,19 +103,19 @@ export default function Home() {
         <div className="grid grid-cols-2 gap-4">
           <button 
             onClick={() => router.push('/scanner')}
-            className="bg-green-400 text-white p-4 rounded-lg flex flex-col items-center space-y-2 hover:bg-green-700 transition-colors"
-          >
-            <QrCode size={32} />
-            <span className="font-medium">Escanear QR</span>
-          </button>
-          
-          <button 
-            onClick={() => router.push('/rewards')}
-            className="bg-yellow-400 text-white p-4 rounded-lg flex flex-col items-center space-y-2 hover:bg-yellow-700 transition-colors"
-          >
-            <Trophy size={32} />
-            <span className="font-medium">Recompensas</span>
-          </button>
+                className="bg-green-400 text-white p-4 rounded-lg flex flex-col items-center space-y-2 hover:bg-green-700 transition-colors"
+              >
+                <QrCode size={32} />
+                <span className="font-medium">Escanear QR</span>
+              </button>
+              
+              <button 
+                onClick={() => router.push('/rewards')}
+                className="bg-yellow-400 text-white p-4 rounded-lg flex flex-col items-center space-y-2 hover:bg-yellow-700 transition-colors"
+              >
+                <Trophy size={32} />
+                <span className="font-medium">Recompensas</span>
+              </button>
         </div>
       </div>
 

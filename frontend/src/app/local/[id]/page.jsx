@@ -9,6 +9,7 @@ import Loading from "@/components/Loading";
 import { 
   MapPin, 
   Star, 
+  Camera,
   Trophy, 
   Clock, 
   Phone, 
@@ -203,19 +204,18 @@ export default function LocalDetailPage() {
             </div>
           ) : (
             <Button 
-              onClick={handleCheckIn}
-              disabled={checkInLoading}
+
+              disabled={true}
               className="w-full bg-green-600 hover:bg-green-700 text-white py-3"
             >
               {checkInLoading ? (
                 <div className="flex items-center justify-center space-x-2">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Fazendo check-in...</span>
                 </div>
               ) : (
                 <div className="flex items-center justify-center space-x-2">
-                  <QrCode size={20} />
-                  <span>Fazer Check-in (+{local.pontuacao || 10} pts)</span>
+                  <Camera size={20} />
+                  <span>Fazer Check-in Pelo Scanner</span>
                 </div>
               )}
             </Button>

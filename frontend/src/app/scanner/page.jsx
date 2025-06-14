@@ -6,14 +6,25 @@ import { useApp } from "@/contexts/AppContext";
 import { localsService } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import Loading from "@/components/Loading";
+import { QrCode, CheckCircle, XCircle, MapPin, Trophy, Camera, Settings } from "lucide-react";
 import {
-  QrCode,
-  CheckCircle,
-  XCircle,
-  MapPin,
-  Trophy,
-  Camera,
-} from "lucide-react";
+  Scanner,
+  useDevices,
+  outline,
+  boundingBox,
+  centerText,
+} from "@yudiel/react-qr-scanner";
+
+const styles = {
+  container: {
+    width: '100%',
+    height: '300px',
+    margin: 'auto',
+  },
+  controls: {
+    marginBottom: 8,
+  },
+};
 
 export default function ScannerPage() {
   const router = useRouter();
@@ -36,7 +47,7 @@ export default function ScannerPage() {
   // Redirecionar se não estiver autenticado
   useEffect(() => {
     if (!appLoading && !isAuthenticated) {
-      router.push("/login");
+      router.push('/login');
     }
   }, [isAuthenticated, appLoading]);
 
@@ -103,13 +114,7 @@ export default function ScannerPage() {
     }
   };
 
-  const resetScanner = () => {
-    setScanResult(null);
-    setScanStatus(null);
-    setIsProcessing(false);
-    setLocal(null);
-    setPause(false);
-  };
+
 
   const handleError = (error) => {
     console.log(`Scanner error: ${error}`);
@@ -200,7 +205,7 @@ export default function ScannerPage() {
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="relative">
             {!scanStatus && (
-              <div className="relative">
+              <div>
                 <Scanner
                   formats={[
                     "qr_code",
@@ -245,13 +250,6 @@ export default function ScannerPage() {
                   scanDelay={2000}
                   paused={pause}
                 />
-                
-                {/* Scanner overlay instructions */}
-                <div className="absolute top-4 left-4 right-4 bg-black bg-opacity-50 text-white p-3 rounded-lg">
-                  <p className="text-sm text-center">
-                    Posicione o QR code dentro da área de escaneamento
-                  </p>
-                </div>
               </div>
             )}
 
@@ -312,44 +310,43 @@ export default function ScannerPage() {
           </div>
         </div>
 
-        {/* Manual Reset Button */}
-        {!scanStatus && (
-          <div className="text-center">
+        {/* Bloco centralizado com instrução e botões */}
+        <div className="bg-white rounded-lg shadow-sm p-6 flex flex-col items-center space-y-6">
+          {/* Scanner overlay instructions */}
+          {!scanStatus && (
+            <div className=" bg-blue-50 border border-blue-200 rounded-lg bg-opacity-50 text-blue-950 shadow-sm p-3 rounded-lg w-full font-medium">
+              <p className="text-sm text-center">
+                Centralize o QR Code
+              </p>
+            </div>
+          )}
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-2 gap-4 w-full">
             <Button
-              onClick={resetScanner}
+              onClick={() => router.push('/')}
               variant="outline"
-              className="text-gray-600"
+              className="flex items-center space-x-2 w-full justify-center"
             >
-              Resetar Scanner
+              <MapPin size={20} />
+              <span>Ver Locais</span>
+            </Button>
+            
+            <Button
+              onClick={() => router.push('/rewards')}
+              variant="outline"
+              className="flex items-center space-x-2 w-full justify-center"
+            >
+              <Trophy size={20} />
+              <span>Recompensas</span>
             </Button>
           </div>
-        )}
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-4">
-          <Button
-            onClick={() => router.push("/")}
-            variant="outline"
-            className="flex items-center space-x-2"
-          >
-            <MapPin size={20} />
-            <span>Ver Locais</span>
-          </Button>
-
-          <Button
-            onClick={() => router.push("/rewards")}
-            variant="outline"
-            className="flex items-center space-x-2"
-          >
-            <Trophy size={20} />
-            <span>Recompensas</span>
-          </Button>
         </div>
 
         {/* Instructions */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <h3 className="font-medium text-blue-900 mb-2">
-            📱 Como usar o scanner
+             Como usar o scanner
           </h3>
           <ul className="text-sm text-blue-800 space-y-1">
             <li>• Permita o acesso à câmera quando solicitado</li>
