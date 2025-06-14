@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
-import { authService } from '@/lib/api';
+import { authService, localsService } from '@/lib/api';
 
 // Estado inicial
 const initialState = {
@@ -162,19 +162,24 @@ export function AppProvider({ children }) {
 
   const checkIn = useCallback(async (localId) => {
     try {
-      if (!state.user) throw new Error('Usuário não autenticado');
-      
+      if (!state.user) {
+        //TODO: Implementar mostrar um toast que o usuário precisa estar logado
+        console.log('Usuário não está logado.');
+      }
+      const local = await localsService.getById(localId); //Pegar local
       // Verificar se já visitou este local
       const alreadyVisited = state.visitedLocals.some(local => local.id === localId);
       if (alreadyVisited) {
-        throw new Error('Você já fez check-in neste local');
+        //TODO: Implementar mostrar um toast que já foi visitado
+        console.warn('Você já visitou este local.');
       }
 
       // Aqui você implementaria a lógica de check-in com a API
       // const response = await usersService.checkIn(localId, state.user.id);
       
       // Por enquanto, vamos simular
-      const pointsEarned = 10; // Pontos fixos por check-in
+      console.log(local);
+      const pointsEarned = local.data.pontuacao; // Pontos fixos por check-in
       addPoints(pointsEarned);
       addVisitedLocal({ id: localId, visitedAt: new Date() });
       
