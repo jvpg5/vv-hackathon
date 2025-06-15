@@ -205,7 +205,7 @@ export default function ProfilePage() {
                   )}
                 </div>
                 
-                {isEditing && (
+                {/* {isEditing && (
                   <label className="absolute bottom-0 right-0 bg-green-600 text-white rounded-full p-1.5 cursor-pointer hover:bg-green-700 transition-colors shadow-lg">
                     <Camera size={14} />
                     <input
@@ -215,7 +215,7 @@ export default function ProfilePage() {
                       className="hidden"
                     />
                   </label>
-                )}
+                )} */}
               </div>
               
               {/* User Info */}
@@ -416,7 +416,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols gap-4">
           <button
             onClick={() => router.push('/scanner')}
             className="bg-green-600 text-white px-4 py-3 rounded-xl hover:bg-green-700 transition-colors flex items-center justify-center space-x-2 shadow-lg"
