@@ -415,6 +415,7 @@ class SeedDatabase {
           headers: { 'Authorization': `Bearer ${this.adminToken}` }
         });
       }
+      console.log(`✅ ${localsResponse.data.data.length} locais removidos`);
       
       // Clear premios
       const premiosResponse = await axios.get(`${API_BASE_URL}/premios`, {
@@ -425,6 +426,34 @@ class SeedDatabase {
         await axios.delete(`${API_BASE_URL}/premios/${premio.documentId}`, {
           headers: { 'Authorization': `Bearer ${this.adminToken}` }
         });
+      }
+      console.log(`✅ ${premiosResponse.data.data.length} prêmios removidos`);
+      
+     
+      
+      // Clear users (except admin)
+      try {
+        const usersResponse = await axios.get(`${API_BASE_URL}/users`, {
+          headers: { 'Authorization': `Bearer ${this.adminToken}` }
+        });
+        
+        let removedUsersCount = 0;
+        for (const user of usersResponse.data) {
+          // Don't delete admin user
+          if (user.email !== ADMIN_CREDENTIALS.email) {
+            try {
+              await axios.delete(`${API_BASE_URL}/users/${user.id}`, {
+                headers: { 'Authorization': `Bearer ${this.adminToken}` }
+              });
+              removedUsersCount++;
+            } catch (userError) {
+              console.log(`⚠️  Não foi possível remover usuário ${user.username}: ${userError.message}`);
+            }
+          }
+        }
+        console.log(`✅ ${removedUsersCount} usuários removidos (admin preservado)`);
+      } catch (usersError) {
+        console.log('⚠️  Não foi possível limpar usuários:', usersError.message);
       }
       
       console.log('✅ Banco de dados limpo com sucesso!');

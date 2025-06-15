@@ -28,7 +28,8 @@ async function apiRequest(endpoint, options = {}) {
     const response = await fetch(url, config);
     
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      console.log(`HTTP error! status: ${response.status}`);
+      return;
     }
     
     return await response.json();
@@ -212,7 +213,7 @@ export const authService = {
 
   // Obter informações do usuário autenticado
   async getMe() {
-    return apiRequest('/users/me');
+    return apiRequest('/users/me?populate=*');
   },
 };
 
@@ -228,14 +229,25 @@ export const usersService = {
 
   // Adicionar pontos ao usuário
   async addPoints(userId, points) {
-    // Esta função precisará ser implementada no backend
-    return apiRequest('/users/add-points', {
-      method: 'POST',
-      body: JSON.stringify({
-        userId,
-        points,
-      }),
-    });
+    try {
+      // Primeiro, buscar os pontos atuais do usuário
+      const currentUser = await apiRequest(`/users/${userId}`);
+      const currentPoints = currentUser.pontos_totais || 0;
+      
+      // Calcular nova pontuação
+      const newTotalPoints = currentPoints + points;
+      
+      // Atualizar o usuário com a nova pontuação
+      return apiRequest(`/users/${userId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          pontos: newTotalPoints,
+        }),
+      });
+    } catch (error) {
+      console.error('Erro ao adicionar pontos:', error);
+      throw error;
+    }
   },
 
   // Fazer check-in em um local
@@ -261,8 +273,66 @@ export const usersService = {
       }
 
       // Se válido, faz o check-in
-      return await this.checkIn(validation.local.documentId, userId);
+      const checkInResult = await this.checkIn(validation.local.documentId, userId);
+
+      // Verificar missões que podem ser completadas com este check-in
+      const missionContext = {
+        localCategory: validation.local.categoria,
+        newPlaceVisited: checkInResult.newPlace, // Assumindo que o backend retorna isso
+      };
+
+      // Buscar missões disponíveis e verificar quais podem ser completadas
+      const availableMissions = await dailyMissionsService.getAvailableMissions(userId);
+      const completableMissions = [];
+
+      for (const mission of availableMissions.data || []) {
+        const canComplete = await dailyMissionsService.canCompleteMission(
+          mission.documentId, 
+          userId, 
+          missionContext
+        );
+        
+        if (canComplete.canComplete) {
+          completableMissions.push(mission);
+        }
+      }
+
+      return {
+        ...checkInResult,
+        completableMissions,
+        local: validation.local
+      };
     } catch (error) {
+      throw error;
+    }
+  },
+
+  // Completar missão e adicionar pontos
+  async completeMissionAndAddPoints(missionId, userId) {
+    try {
+      // Buscar informações da missão
+      const mission = await dailyMissionsService.getById(missionId);
+      
+      if (!mission.data) {
+        throw new Error('Missão não encontrada');
+      }
+
+      // Completar a missão
+      const completionResult = await dailyMissionsService.completeMission(missionId, userId);
+
+      // Adicionar pontos ao usuário
+      const points = mission.data.pontos || 0;
+      if (points > 0) {
+        await this.addPoints(userId, points);
+      }
+
+      return {
+        ...completionResult,
+        pointsEarned: points,
+        mission: mission.data
+      };
+    } catch (error) {
+      console.error('Erro ao completar missão:', error);
       throw error;
     }
   },
@@ -286,6 +356,211 @@ export const uploadService = {
       headers: {}, // Remove Content-Type para FormData
     });
   },
+};
+
+// Serviços para Daily Missions
+export const dailyMissionsService = {
+  // Buscar todas as missões diárias
+  async getAll(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/daily-missions${queryString ? `?${queryString}` : ''}`;
+    return apiRequest(endpoint);
+  },
+
+  // Buscar missão por ID
+  async getById(id, params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/daily-missions/${id}${queryString ? `?${queryString}` : ''}`;
+    return apiRequest(endpoint);
+  },
+
+  // Buscar missões do usuário atual
+  async getUserMissions(userId, params = {}) {
+    const defaultParams = {
+      'populate': '*',
+      'filters[users_permissions_users][id][$eq]': userId,
+      ...params
+    };
+    return this.getAll(defaultParams);
+  },
+
+  // Buscar missões disponíveis (não completadas pelo usuário)
+  async getAvailableMissions(userId) {
+    // Get all missions first, then filter on frontend
+    const params = {
+      'populate': '*'
+    };
+    return this.getAll(params);
+  },
+
+  // Completar uma missão
+  async completeMission(missionId, userId) {
+    // Usar update com connect para adicionar o usuário à relação users_permissions_users
+    return apiRequest(`/daily-missions/${missionId}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        data: {
+          users_permissions_users: {
+            connect: [userId]
+          }
+        }
+      }),
+    });
+  },
+
+  // Criar nova missão (admin)
+  async create(data) {
+    return apiRequest('/daily-missions', {
+      method: 'POST',
+      body: JSON.stringify({ data }),
+    });
+  },
+
+  // Atualizar missão (admin)
+  async update(id, data) {
+    return apiRequest(`/daily-missions/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ data }),
+    });
+  },
+
+  // Deletar missão (admin)
+  async delete(id) {
+    return apiRequest(`/daily-missions/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Verificar progresso das missões do usuário
+  async getUserProgress(userId) {
+    try {
+      const [completedResponse, allMissionsResponse] = await Promise.all([
+        this.getUserMissions(userId),
+        this.getAll({ 'populate': '*' }) // Get all missions
+      ]);
+
+      const completedMissions = completedResponse.data || [];
+      const allMissions = allMissionsResponse.data || [];
+      
+      // Get IDs of completed missions
+      const completedMissionIds = completedMissions.map(mission => 
+        mission.documentId || mission.id
+      );
+      
+      // Filter available missions (not completed)
+      const availableMissions = allMissions.filter(mission => 
+        !completedMissionIds.includes(mission.documentId || mission.id)
+      );
+
+      const totalMissions = allMissions.length;
+
+      return {
+        completed: completedMissions,
+        available: availableMissions,
+        progress: {
+          completed: completedMissions.length,
+          total: totalMissions,
+          percentage: totalMissions > 0 ? (completedMissions.length / totalMissions) * 100 : 0
+        }
+      };
+    } catch (error) {
+      console.error('Erro ao buscar progresso das missões:', error);
+      // Return fallback data instead of throwing
+      return {
+        completed: [],
+        available: [
+          { id: 1, documentId: 'mock1', nome: "Visite 1 local novo", pontos: 20, rule: "visit_new_place" },
+          { id: 2, documentId: 'mock2', nome: "Escaneie 5 locais", pontos: 50, rule: "daily_places_scanned>=5" },
+          { id: 3, documentId: 'mock3', nome: "Faça check-in em gastronomia", pontos: 30, rule: "checkin_category_gastronomia" }
+        ],
+        progress: {
+          completed: 0,
+          total: 3,
+          percentage: 0
+        }
+      };
+    }
+  },
+
+  // Verificar se uma missão pode ser completada baseada na regra
+  async canCompleteMission(missionId, userId, context = {}) {
+    try {
+      const mission = await this.getById(missionId, { populate: '*' });
+      
+      if (!mission.data) {
+        return { canComplete: false, reason: 'Missão não encontrada' };
+      }
+
+      const rule = mission.data.rule;
+      
+      // Parse rule expressions with operators
+      const parseRule = (rule) => {
+        const operators = ['>=', '<=', '>', '<', '==', '='];
+        for (const op of operators) {
+          if (rule.includes(op)) {
+            const [key, value] = rule.split(op);
+            return {
+              key: key.trim(),
+              operator: op,
+              value: parseFloat(value.trim()) || value.trim()
+            };
+          }
+        }
+        return { key: rule, operator: null, value: null };
+      };
+
+      const evaluateCondition = (contextValue, operator, targetValue) => {
+        const numContextValue = parseFloat(contextValue) || 0;
+        const numTargetValue = parseFloat(targetValue) || 0;
+        
+        switch (operator) {
+          case '>=': return numContextValue >= numTargetValue;
+          case '<=': return numContextValue <= numTargetValue;
+          case '>': return numContextValue > numTargetValue;
+          case '<': return numContextValue < numTargetValue;
+          case '==':
+          case '=': return contextValue == targetValue;
+          default: return false;
+        }
+      };
+
+      const parsedRule = parseRule(rule);
+      
+      // Handle different rule types
+      switch (parsedRule.key) {
+        case 'visit_new_place':
+          return { canComplete: !!context.newPlaceVisited, reason: 'Visite um local novo' };
+        
+        case 'checkin_category_gastronomia':
+          return { 
+            canComplete: context.localCategory === 'gastronomia', 
+            reason: 'Faça check-in em um local gastronômico' 
+          };
+
+        case 'daily_places_scanned':
+          const scannedCount = context.daily_places_scanned || 0;
+          const canComplete = evaluateCondition(scannedCount, parsedRule.operator, parsedRule.value);
+          return {
+            canComplete,
+            reason: `Escaneie ${parsedRule.value} locais (${scannedCount}/${parsedRule.value})`
+          };
+        
+        default:
+          // For rules with operators but unknown keys
+          if (parsedRule.operator && context[parsedRule.key] !== undefined) {
+            const canComplete = evaluateCondition(context[parsedRule.key], parsedRule.operator, parsedRule.value);
+            return {
+              canComplete,
+              reason: `${parsedRule.key} ${parsedRule.operator} ${parsedRule.value}`
+            };
+          }
+          
+          return { canComplete: true, reason: 'Missão disponível' };
+      }
+    } catch (error) {
+      return { canComplete: false, reason: 'Erro ao verificar missão' };
+    }
+  }
 };
 
 // Exportar função auxiliar

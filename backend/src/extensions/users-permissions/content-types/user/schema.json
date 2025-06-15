@@ -83,6 +83,29 @@
       "type": "relation",
       "relation": "oneToMany",
       "target": "api::premio.premio"
+    },
+    "daily_places_scanned": {
+      "type": "integer"
+    },
+    "total_places_scanned": {
+      "type": "integer"
+    },
+    "avatar_url": {
+      "type": "string"
+    },
+    "first_name": {
+      "type": "string"
+    },
+    "last_name": {
+      "type": "string"
+    },
+    "bio": {
+      "type": "text"
+    },
+    "daily_locals_scanned": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::local.local"
     }
   }
 }

@@ -33,7 +33,7 @@ export default function BottomNavigation() {
   return (
     <>
       {/* Header com informações do usuário */}
-      {isAuthenticated && (
+      {/* {isAuthenticated && (
         <header className="bg-green-600 text-white p-4 flex justify-between items-center">
           <div>
             <h2 className="text-lg font-bold">Olá, {user?.username || 'Usuário'}!</h2>
@@ -47,7 +47,7 @@ export default function BottomNavigation() {
             <LogOut size={20} />
           </button>
         </header>
-      )}
+      )} */}
 
       {/* Navegação inferior */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">

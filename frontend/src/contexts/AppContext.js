@@ -1,7 +1,8 @@
 'use client';
 
 import { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
-import { authService, localsService } from '@/lib/api';
+import { toast } from 'sonner';
+import { authService, localsService, usersService, dailyMissionsService } from '@/lib/api';
 
 // Estado inicial
 const initialState = {
@@ -121,9 +122,12 @@ export function AppProvider({ children }) {
       const response = await authService.login(identifier, password);
       dispatch({ type: actionTypes.SET_USER, payload: response.user });
       
+      toast.success(`Bem-vindo de volta, ${response.user.username}!`);
+      
       return response;
     } catch (error) {
       dispatch({ type: actionTypes.SET_ERROR, payload: error.message });
+      toast.error('Erro ao fazer login. Verifique suas credenciais.');
       throw error;
     } finally {
       dispatch({ type: actionTypes.SET_LOADING, payload: false });
@@ -138,9 +142,12 @@ export function AppProvider({ children }) {
       const response = await authService.register(username, email, password);
       dispatch({ type: actionTypes.SET_USER, payload: response.user });
       
+      toast.success(`Conta criada com sucesso! Bem-vindo, ${username}!`);
+      
       return response;
     } catch (error) {
       dispatch({ type: actionTypes.SET_ERROR, payload: error.message });
+      toast.error('Erro ao criar conta. Tente novamente.');
       throw error;
     } finally {
       dispatch({ type: actionTypes.SET_LOADING, payload: false });
@@ -150,11 +157,31 @@ export function AppProvider({ children }) {
   const logout = useCallback(() => {
     authService.logout();
     dispatch({ type: actionTypes.LOGOUT });
+    toast.info('Você foi desconectado. Até a próxima!');
   }, []);
 
-  const addPoints = useCallback((points) => {
-    dispatch({ type: actionTypes.ADD_POINTS, payload: points });
-  }, []);
+  const addPoints = useCallback(async (points) => {
+    try {
+      if (!state.user) {
+        throw new Error('Usuário não está logado');
+      }
+
+      // Fazer requisição para adicionar pontos no backend
+      await usersService.addPoints(state.user.id, points);
+      
+      // Atualizar estado local
+      dispatch({ type: actionTypes.ADD_POINTS, payload: points });
+      
+      // Opcionalmente, buscar dados atualizados do usuário
+      const updatedUser = await authService.getMe();
+      dispatch({ type: actionTypes.SET_USER, payload: updatedUser });
+      
+    } catch (error) {
+      console.error('Erro ao adicionar pontos:', error);
+      dispatch({ type: actionTypes.SET_ERROR, payload: error.message });
+      throw error;
+    }
+  }, [state.user]);
 
   const addVisitedLocal = useCallback((local) => {
     dispatch({ type: actionTypes.ADD_VISITED_LOCAL, payload: local });
@@ -163,32 +190,101 @@ export function AppProvider({ children }) {
   const checkIn = useCallback(async (localId) => {
     try {
       if (!state.user) {
-        //TODO: Implementar mostrar um toast que o usuário precisa estar logado
-        console.log('Usuário não está logado.');
+        toast.error('Você precisa estar logado para fazer check-in');
+        return;
       }
-      const local = await localsService.getById(localId); //Pegar local
-      // Verificar se já visitou este local
-      const alreadyVisited = state.visitedLocals.some(local => local.id === localId);
+      
+      const [local, user] = await Promise.all([
+        localsService.getById(localId),
+        authService.getMe()
+      ]);
+
+      // Verificar se já visitou este local hoje
+      const alreadyVisited = user.daily_locals_scanned?.some(
+        (visited) => visited.id === local.data.id
+      );
+      
       if (alreadyVisited) {
-        //TODO: Implementar mostrar um toast que já foi visitado
-        console.warn('Você já visitou este local.');
+        toast.warning('Você já visitou este local hoje');
+        return { pointsEarned: 0 };
       }
 
-      // Aqui você implementaria a lógica de check-in com a API
-      // const response = await usersService.checkIn(localId, state.user.id);
+      // Fazer requisição para adicionar o local à relação daily_locals_scanned do usuário
+      // Usando connect para adicionar uma nova relação sem sobrescrever as existentes
+      await usersService.updateProfile(state.user.id, {
+        daily_locals_scanned: {
+          connect: [local.data.id]
+        }
+      });
       
-      // Por enquanto, vamos simular
-      console.log(local);
-      const pointsEarned = local.data.pontuacao; // Pontos fixos por check-in
-      addPoints(pointsEarned);
+      const pointsEarned = local.data.pontuacao || 10;
+      await addPoints(pointsEarned);
       addVisitedLocal({ id: localId, visitedAt: new Date() });
       
-      return { pointsEarned };
+      // Verificar e completar missões diárias
+      let missionPointsEarned = 0;
+      try {
+        const missionsProgress = await dailyMissionsService.getUserProgress(user.id);
+        const availableMissions = missionsProgress.available || [];
+        
+        // Preparar contexto para verificação de missões
+        const currentDailyCount = (user.daily_locals_scanned?.length || 0) + 1; // +1 porque acabamos de adicionar
+        const isNewPlace = !user.daily_locals_scanned?.some(visited => visited.id === local.data.id);
+        
+        const missionContext = {
+          newPlaceVisited: isNewPlace,
+          localCategory: local.data.categoria,
+          daily_places_scanned: currentDailyCount,
+          currentLocal: local.data
+        };
+        
+        // Verificar cada missão disponível
+        for (const mission of availableMissions) {
+          const canComplete = await dailyMissionsService.canCompleteMission(
+            mission.documentId || mission.id,
+            user.id,
+            missionContext
+          );
+          
+          if (canComplete.canComplete) {
+            try {
+              // Completar a missão
+              await dailyMissionsService.completeMission(mission.documentId || mission.id, user.id);
+              
+              // Adicionar pontos da missão
+              const missionPoints = mission.pontos || 0;
+              if (missionPoints > 0) {
+                await addPoints(missionPoints);
+                missionPointsEarned += missionPoints;
+              }
+              
+              toast.success(`Missão completada: ${mission.nome}! +${missionPoints} pontos!`);
+            } catch (missionError) {
+              console.error('Erro ao completar missão:', missionError);
+              // Não interromper o fluxo principal se houver erro na missão
+            }
+          }
+        }
+      } catch (missionError) {
+        console.error('Erro ao verificar missões:', missionError);
+        // Não interromper o fluxo principal se houver erro nas missões
+      }
+      
+      const totalPoints = pointsEarned + missionPointsEarned;
+      const successMessage = missionPointsEarned > 0 
+        ? `Check-in realizado! Você ganhou ${pointsEarned} pontos + ${missionPointsEarned} pontos de missões!`
+        : `Check-in realizado! Você ganhou ${pointsEarned} pontos!`;
+        
+      toast.success(successMessage);
+      
+      return { pointsEarned: totalPoints };
     } catch (error) {
+      console.error('Erro ao realizar check-in:', error);
       dispatch({ type: actionTypes.SET_ERROR, payload: error.message });
+      toast.error('Erro ao realizar check-in. Tente novamente.');
       throw error;
     }
-  }, [state.user, state.visitedLocals, addPoints, addVisitedLocal]);
+  }, [state.user, addPoints, addVisitedLocal]);
 
   const clearError = useCallback(() => {
     dispatch({ type: actionTypes.CLEAR_ERROR });

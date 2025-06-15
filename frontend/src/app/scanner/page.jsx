@@ -89,11 +89,13 @@ export default function ScannerPage() {
       if (response.data && response.data.length > 0) {
         const foundLocal = response.data[0];
         setLocal(foundLocal);
-        setScanStatus('success');
         
         // Perform automatic check-in
         try {
-          await checkIn(foundLocal.documentId);
+          const earned = await checkIn(foundLocal.documentId);
+          if(!earned) {
+            setScanStatus('error');
+          }
           
           // Redirect to local detail page after success
           setTimeout(() => {
@@ -151,8 +153,8 @@ export default function ScannerPage() {
       </div>
 
       {/* Header */}
-      <div className="relative z-10 pt-4 pb-2 px-3">
-        <div className="bg-gradient-to-br from-green-500 via-green-600 to-green-700 text-white rounded-2xl p-3 shadow-lg border border-green-400/40">
+      <div className="relative z-10 pb-2 ">
+        <div className="bg-gradient-to-br from-green-500 via-green-600 to-green-700 text-white rounded-2xl rounded-t-none p-3 shadow-lg border border-green-400/40">
           <div className="flex items-center justify-between mb-2">
             <Button
               onClick={() => router.back()}

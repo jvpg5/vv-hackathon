@@ -101,7 +101,7 @@ export default function RankingPage() {
   return (
     <div className="pb-20">
       {/* Header */}
-      <div className="bg-gradient-to-br from-green-400 to-green-600 text-white p-6">
+      <div className="bg-gradient-to-br from-green-500 via-green-600 to-green-700 text-white p-6">
         <div className="flex items-center mb-4">
           <button
             onClick={() => router.back()}
@@ -173,7 +173,7 @@ export default function RankingPage() {
                     {/* Avatar */}
                     <Avatar className="h-12 w-12">
                       <AvatarImage 
-                        src={userItem.avatar?.url} 
+                        src={userItem.avatar_url ? userItem.avatar_url : userItem.avatar?.url} 
                         alt={userItem.username}
                       />
                       <AvatarFallback className="bg-green-100 text-green-700 font-semibold">

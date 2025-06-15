@@ -5,7 +5,7 @@ import {star} from 'lucide-react';
 import { Progress } from "@/components/ui/progress"
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/contexts/AppContext';
-import { localsService } from '@/lib/api';
+import { localsService, dailyMissionsService, authService } from '@/lib/api';
 import Loading from '@/components/Loading';
 import { 
   MapPin, 
@@ -19,10 +19,13 @@ import {
   import Image from "next/image";
 
 export default function Home() {
-  const { isAuthenticated, isLoading, user, points } = useApp();
+  const { isAuthenticated, isLoading, user } = useApp();
+  const points = user?.pontos;
   const [locals, setLocals] = useState([]);
   const [featuredLocals, setFeaturedLocals] = useState([]);
   const [loadingLocals, setLoadingLocals] = useState(true);
+  const [dailyMissions, setDailyMissions] = useState([]);
+  const [missionsLoading, setMissionsLoading] = useState(true);
   const router = useRouter();
 
   // Redirecionar para login se não autenticado
@@ -55,6 +58,40 @@ export default function Home() {
     }
   }, [isAuthenticated]);
 
+  // Carregar missões diárias
+  useEffect(() => {
+    const loadDailyMissions = async () => {
+      try {
+        setMissionsLoading(true);
+        const currentUser = authService.getCurrentUser();
+        if (currentUser) {
+          const progress = await dailyMissionsService.getUserProgress(currentUser.id);
+          
+          // Combinar missões completadas e disponíveis para exibição
+          const allMissions = [
+            ...progress.completed.map(mission => ({ ...mission, done: true })),
+            ...progress.available.map(mission => ({ ...mission, done: false }))
+          ];
+          
+          setDailyMissions(allMissions);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar missões diárias:', error);
+        // Fallback para dados mock em caso de erro
+        setDailyMissions([
+          { id: 1, nome: "Visite 1 local novo", done: true, pontos: 20 },
+          { id: 2, nome: "Faça check-in em um local gastronômico", done: false, pontos: 30 },
+        ]);
+      } finally {
+        setMissionsLoading(false);
+      }
+    };
+
+    if (isAuthenticated) {
+      loadDailyMissions();
+    }
+  }, [isAuthenticated]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -67,14 +104,9 @@ export default function Home() {
     return null; // Será redirecionado
   }
 
-  // Exemplo de missões do dia (mock)
-  const dailyMissions = [
-    { id: 1, title: "Visite 1 local novo", done: true, points: 20 },
-    { id: 2, title: "Faça check-in em um local gastronômico", done: false, points: 30 },
-  ];
   const completedMissions = dailyMissions.filter(m => m.done).length;
   const totalMissions = dailyMissions.length;
-  const missionsProgress = (completedMissions / totalMissions) * 100;
+  const missionsProgress = totalMissions > 0 ? (completedMissions / totalMissions) * 100 : 0;
 
   // Exemplo de cálculo de level e locais visitados (ajuste conforme sua lógica real)
   const level = user?.level || Math.floor((points || 0) / 100) + 1;
@@ -134,19 +166,19 @@ export default function Home() {
                 {completedMissions} de {totalMissions} missões concluídas
               </span>
               <span className="text-green-600 font-semibold">
-                +{dailyMissions.reduce((acc, m) => acc + m.points, 0)} pts
+                +{dailyMissions.reduce((acc, m) => acc + (m.pontos || 0), 0)} pts
               </span>
             </div>
             {/* Lista resumida das missões */}
             <ul className="w-full mt-2 space-y-1">
               {dailyMissions.map(mission => (
-                <li key={mission.id} className="flex items-center gap-2 text-green-900">
+                <li key={mission.id || mission.documentId} className="flex items-center gap-2 text-green-900">
                   <span className={`w-2 h-2 rounded-full ${mission.done ? 'bg-green-500' : 'bg-gray-300'}`}></span>
-                  <span className={mission.done ? "line-through text-gray-400" : ""}>
-                    {mission.title}
+                  <span className={`text-xs ${mission.done ? "line-through text-gray-400" : ""}`}>
+                    {mission.nome}
                   </span>
                   <span className="ml-auto text-xs text-green-700 font-semibold">
-                    +{mission.points}
+                    +{mission.pontos}
                   </span>
                 </li>
               ))}
@@ -210,7 +242,7 @@ export default function Home() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg text-green-900 font-semibold">Locais em Destaque</h2>
           <button 
-            onClick={() => router.push('/map')}
+            onClick={() => router.push('/all-locals')}
             className="text-green-600 text-sm font-medium"
           >
             Ver todos
