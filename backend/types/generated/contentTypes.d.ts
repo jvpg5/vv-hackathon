@@ -373,6 +373,41 @@ export interface AdminUser extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiDailyMissionDailyMission
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'daily_missions';
+  info: {
+    displayName: 'daily_mission';
+    pluralName: 'daily-missions';
+    singularName: 'daily-mission';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::daily-mission.daily-mission'
+    > &
+      Schema.Attribute.Private;
+    nome: Schema.Attribute.String;
+    pontos: Schema.Attribute.Integer;
+    publishedAt: Schema.Attribute.DateTime;
+    rule: Schema.Attribute.String;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    users_permissions_users: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::users-permissions.user'
+    >;
+  };
+}
+
 export interface ApiLocalLocal extends Struct.CollectionTypeSchema {
   collectionName: 'locals';
   info: {
@@ -902,17 +937,26 @@ export interface PluginUsersPermissionsUser
   };
   attributes: {
     avatar: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
+    avatar_url: Schema.Attribute.String;
+    bio: Schema.Attribute.Text;
     blocked: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     confirmationToken: Schema.Attribute.String & Schema.Attribute.Private;
     confirmed: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    daily_locals_scanned: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::local.local'
+    >;
+    daily_places_scanned: Schema.Attribute.Integer;
     email: Schema.Attribute.Email &
       Schema.Attribute.Required &
       Schema.Attribute.SetMinMaxLength<{
         minLength: 6;
       }>;
+    first_name: Schema.Attribute.String;
+    last_name: Schema.Attribute.String;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -933,6 +977,7 @@ export interface PluginUsersPermissionsUser
       'manyToOne',
       'plugin::users-permissions.role'
     >;
+    total_places_scanned: Schema.Attribute.Integer;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -955,6 +1000,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token': AdminTransferToken;
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
+      'api::daily-mission.daily-mission': ApiDailyMissionDailyMission;
       'api::local.local': ApiLocalLocal;
       'api::premio.premio': ApiPremioPremio;
       'plugin::content-releases.release': PluginContentReleasesRelease;
