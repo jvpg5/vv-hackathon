@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import {star} from 'lucide-react';
+import { Progress } from "@/components/ui/progress"
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/contexts/AppContext';
 import { localsService } from '@/lib/api';
@@ -12,8 +13,10 @@ import {
   Trophy, 
   Calendar,
   TrendingUp,
-  Star
+  Star,
+  CircleUser
 } from 'lucide-react';
+  import Image from "next/image";
 
 export default function Home() {
   const { isAuthenticated, isLoading, user, points } = useApp();
@@ -64,65 +67,148 @@ export default function Home() {
     return null; // Será redirecionado
   }
 
+  // Exemplo de missões do dia (mock)
+  const dailyMissions = [
+    { id: 1, title: "Visite 1 local novo", done: true, points: 20 },
+    { id: 2, title: "Faça check-in em um local gastronômico", done: false, points: 30 },
+  ];
+  const completedMissions = dailyMissions.filter(m => m.done).length;
+  const totalMissions = dailyMissions.length;
+  const missionsProgress = (completedMissions / totalMissions) * 100;
+
+  // Exemplo de cálculo de level e locais visitados (ajuste conforme sua lógica real)
+  const level = user?.level || Math.floor((points || 0) / 100) + 1;
+  const visitedLocals = user?.visitedLocals?.length || 0;
+  const avatarUrl = user?.avatarUrl || "/avatar-default.png"; // ajuste para seu campo real
+
   return (
     <div className="pb-20"> 
       <div className="bg-gradient-to-br from-green-400 to-green-600 text-white p-6 rounded-b-xl">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2 flex items-center justify-center gap-2">
-            <Star className="text-white" size={28} />
-            Valoriza Vilhena
-          </h1>
-          <p className="font-medium text-white mb-4">
-            Descubra a história e os sabores da nossa terra
-          </p>
-          
-          {/* Cards de estatísticas rápidas */}
-          <div className="grid grid-cols-2 gap-4 mt-6">
-            <div className="bg-white/10 backdrop-blur rounded-lg p-4">
-              <div className="flex items-center justify-center mb-2">
-                <Trophy className="text-yellow-300" size={24} />
-              </div>
-              <div className="text-2xl font-bold">{points}</div>
-              <div className="text-sm text-white">Pontos</div>
+        {/* Card de Perfil do Usuário centralizado e compacto */}
+        <div className="flex justify-center">
+          <div className="bg-white/100 rounded-xl shadow-lg px-4 py-2 mt-2 mb-3 flex items-center w-full max-w-xs border border-green-100 h-16 min-h-0">
+            <div className="flex items-center justify-center rounded-full border-2 border-green-400 shadow bg-white w-9 h-9">
+              <CircleUser className="text-green-400" size={28} />
             </div>
-            
-            <div className="bg-white/10 backdrop-blur rounded-lg p-4">
-              <div className="flex items-center justify-center mb-2">
-                <MapPin className="text-white" size={24} />
+            <div className="ml-3 flex-1 min-w-0">
+              <div className="font-bold text-green-900 text-base truncate leading-tight">
+                {user?.nome || user?.username || "Usuário"}
               </div>
-              <div className="text-2xl font-bold">{featuredLocals.length}</div>
-              <div className="text-sm text-white ">Locais</div>
+              <div className="text-green-700 text-xs font-medium leading-tight">
+                Level {level}
+              </div>
+              <div className="text-xs text-green-600 flex items-center leading-tight">
+                <MapPin className="inline-block mr-1 text-green-500" size={14} />
+                {visitedLocals} locais visitados
+              </div>
             </div>
           </div>
+        </div>
+        <div className="text-center">
+
+          {/* Card de Missões do Dia */}
+          <div className="bg-white/100 rounded-xl shadow-md p-4 mb-6 max-w-xs mx-auto flex flex-col items-center">
+            <div className="flex items-center justify-between w-full mb-2">
+              <span className="font-semibold text-green-800 text-base flex items-center gap-2">
+                Missões do Dia
+              </span>
+              <Trophy className="text-yellow-500" size={24} />
+            </div>
+            {/* Progress bar customizada */}
+            <div className="w-full mb-2 relative">
+              <div className="h-4 bg-green-100 rounded-full overflow-hidden flex items-center">
+                <div
+                  className="bg-gradient-to-r from-green-400 to-green-600 h-4 rounded-full transition-all duration-500"
+                  style={{ width: `${missionsProgress}%` }}
+                ></div>
+                {/* Troféu animado no fim da barra */}
+                <div
+                  className="absolute top-1/2 -translate-y-1/2 right-0 flex items-center"
+                  style={{ right: '-18px' }}
+                >
+                </div>
+              </div>
+            </div>
+            <div className="w-full flex items-center justify-between text-sm mt-1">
+              <span className="text-green-700 font-medium">
+                {completedMissions} de {totalMissions} missões concluídas
+              </span>
+              <span className="text-green-600 font-semibold">
+                +{dailyMissions.reduce((acc, m) => acc + m.points, 0)} pts
+              </span>
+            </div>
+            {/* Lista resumida das missões */}
+            <ul className="w-full mt-2 space-y-1">
+              {dailyMissions.map(mission => (
+                <li key={mission.id} className="flex items-center gap-2 text-green-900">
+                  <span className={`w-2 h-2 rounded-full ${mission.done ? 'bg-green-500' : 'bg-gray-300'}`}></span>
+                  <span className={mission.done ? "line-through text-gray-400" : ""}>
+                    {mission.title}
+                  </span>
+                  <span className="ml-auto text-xs text-green-700 font-semibold">
+                    +{mission.points}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Cards de estatísticas rápidas */}
+          <div className="flex flex-col gap-4 mt-4  items-center">
+  <div className=" bg-white/90 backdrop-blur-md shadow-lg rounded-xl w-full max-w-xs h-16 flex items-center px-4 border border-white/40 hover:scale-105 transition-transform">
+    <div className="flex items-center justify-center bg-yellow-100 rounded-full w-10 h-10 shadow mr-3">
+      <Trophy className="text-yellow-500" size={22} />
+    </div>
+    <div className="flex flex-row items-baseline gap-2">
+      <div className="text-xl font-bold text-green-900">{points}</div>
+      <div className="text-sm text-green-950 font-medium">Pontos</div>
+    </div>
+  </div>
+  
+  <div className="bg-white/90 backdrop-blur-md shadow-lg rounded-xl w-full max-w-xs h-16 flex items-center px-4 border border-white/40 hover:scale-105 transition-transform">
+    <div className="flex items-center justify-center bg-green-100 rounded-full w-10 h-10 shadow mr-3">
+      <MapPin className="text-green-600" size={22} />
+    </div>
+    <div className="flex flex-row items-baseline gap-2">
+      <div className="text-xl font-bold text-green-900">{featuredLocals.length}</div>
+      <div className="text-sm text-green-950 font-medium">Locais</div>
+    </div>
+  </div>
+</div>
         </div>
       </div>
 
       {/* Ações rápidas */}
       <div className="p-6">
-        <h2 className="text-lg font-semibold mb-4">Ações Rápidas</h2>
-        <div className="grid grid-cols-2 gap-4">
-          <button 
-            onClick={() => router.push('/scanner')}
-                className="bg-green-400 text-white p-4 rounded-lg flex flex-col items-center space-y-2 hover:bg-green-700 transition-colors"
-              >
-                <QrCode size={32} />
-                <span className="font-medium">Escanear QR</span>
-              </button>
-              
-              <button 
-                onClick={() => router.push('/rewards')}
-                className="bg-yellow-400 text-white p-4 rounded-lg flex flex-col items-center space-y-2 hover:bg-yellow-700 transition-colors"
-              >
-                <Trophy size={32} />
-                <span className="font-medium">Recompensas</span>
-              </button>
-        </div>
+  <h2 className="text-lg font-semibold mb-4 text-green-900">Ações Rápidas</h2>
+  <div className="flex flex-row gap-4 justify-center">
+    <button
+      onClick={() => router.push('/scanner')}
+      className="flex flex-col items-center bg-white/70 border border-green-100 rounded-xl shadow-md px-6 py-4 hover:bg-green-50 transition-colors w-40"
+    >
+      <div className="flex items-center justify-center bg-green-100 rounded-full w-12 h-12 mb-2 shadow">
+        <QrCode className="text-green-600" size={28} />
       </div>
+      <span className="font-semibold text-green-900 text-base">Escanear QR</span>
+      <span className="text-xs text-green-700 mt-1">Ganhe pontos visitando locais</span>
+    </button>
+    <button
+      onClick={() => router.push('/rewards')}
+      className="flex flex-col items-center bg-white/70 border border-yellow-100 rounded-xl shadow-md px-6 py-4 hover:bg-yellow-50 transition-colors w-40"
+    >
+      <div className="flex items-center justify-center bg-yellow-100 rounded-full w-12 h-12 mb-2 shadow">
+        <Trophy className="text-yellow-500" size={28} />
+      </div>
+      <span className="font-semibold text-yellow-900 text-base">Recompensas</span>
+      <span className="text-xs text-yellow-700 mt-1">Troque pontos por prêmios</span>
+    </button>
+  </div>
+</div>
 
       {/* Locais em destaque */}
       <div className="p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Locais em Destaque</h2>
+          <h2 className="text-lg text-green-900 font-semibold">Locais em Destaque</h2>
           <button 
             onClick={() => router.push('/map')}
             className="text-green-600 text-sm font-medium"
